@@ -62,8 +62,12 @@ class Seq2SeqTrainer:
         self.gradient_average = False
 
         if cuda:
-            self.model = self.model.cuda()
-            self.criterion = self.criterion.cuda()
+            # hack for cuda9 with V100
+            try:
+                self.model = self.model.cuda()
+            except:
+                self.model = self.model.cuda()
+            self.criterion.cuda()
 
 #        if distributed:
 #            self.model = apex.parallel.DistributedDataParallel(self.model, delay_allreduce=True)
@@ -297,6 +301,8 @@ class Seq2SeqTrainer:
         """
         torch.set_grad_enabled(False)
         self.model.eval()
+        for p in self.model.parameters():
+            p.grad = None
         torch.cuda.empty_cache()
         self.preallocate(data_loader, training=False)
         output = self.feed_data(data_loader, training=False)

@@ -7,8 +7,9 @@ else
   source config_DGX1.sh
   echo "Unknown system, assuming DGX1"
 fi
+DGXNGPU=${PHILLY_GPU_COUNT:-$1}
 SLURM_NTASKS_PER_NODE=${SLURM_NTASKS_PER_NODE:-$DGXNGPU}
-SLURM_JOB_ID=${SLURM_JOB_ID:-$RANDOM}
+SLURM_JOB_ID=${SLURM_JOB_ID:-$PHILLY_JOB_ID}
 MULTI_NODE=${MULTI_NODE:-''}
 echo "Run vars: id $SLURM_JOB_ID gpus $SLURM_NTASKS_PER_NODE mparams $MULTI_NODE"
 
@@ -25,10 +26,11 @@ echo "STARTING TIMING RUN AT $start_fmt"
 
 # run benchmark
 set -x
-DATASET_DIR='/data'
+DATASET_DIR=${DATASET_DIR:-'../data'}
 RESULTS_DIR='gnmt_wmt16'
 BATCH=${BATCH:-32}
 TEST_BATCH_SIZE=${TEST_BATCH_SIZE:-128}
+TEST_BATCH_SIZE=32
 LR=${LR:-"1.75e-3"}
 TARGET=21.80
 WARMUP_ITERS=${WARMUP_ITERS:-100}
@@ -43,13 +45,19 @@ python -m torch.distributed.launch --nproc_per_node $SLURM_NTASKS_PER_NODE $MULT
   --dataset-dir ${DATASET_DIR} \
   --target-bleu $TARGET \
   --epochs 20 \
-  --math fp16 \
-  --print-freq 10 \
+  --math fp32 \
+  --print-freq 500 \
   --batch-size $BATCH \
   --test-batch-size $TEST_BATCH_SIZE \
-  --model-config "{'num_layers': 4, 'hidden_size': 1024, 'dropout':0.2, 'share_embedding': True}" \
+  --val-batch-size 32 \
+  --keep-checkpoints 10 \
+  --save-all \
+  --model-config "{'num_layers': 8, 'hidden_size': 1024, 'dropout':0.2, 'share_embedding': False}" \
   --optimization-config "{'optimizer': 'FusedAdam', 'lr': $LR}" \
   --scheduler-config "{'lr_method':'mlperf', 'warmup_iters':$WARMUP_ITERS, 'remain_steps':$REMAIN_STEPS, 'decay_steps':$DECAY_STEPS}" ; ret_code=$?
+  # --resume ./results/gnmt_wmt16/checkpoint1.pth \
+  # --resume ./results/backup/checkpoint5.pth \
+  # --start-epoch 2 \
 
 set +x
 

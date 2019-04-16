@@ -18,7 +18,7 @@ def gather_predictions(preds):
     world_size = get_world_size()
     if world_size > 1:
         all_preds = preds.new(world_size * preds.size(0), preds.size(1))
-        all_preds_list = all_preds.chunk(world_size, dim=0)
+        all_preds_list = list(all_preds.chunk(world_size, dim=0))
         dist.all_gather(all_preds_list, preds)
         preds = all_preds
     return preds
