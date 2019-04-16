@@ -1,6 +1,6 @@
 ROOT=$rootdir
 
-DIR=results/v0.5.0/nvidia/submission/code/rnn_translator
+DIR=v0.5.0/nvidia/submission/code/rnn_translator
 
 export DATASET_DIR=$rootdir/$DIR/data
 
