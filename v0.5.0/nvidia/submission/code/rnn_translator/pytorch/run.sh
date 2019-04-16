@@ -3,6 +3,7 @@ ROOT=$rootdir
 DIR=v0.5.0/nvidia/submission/code/rnn_translator
 
 export DATASET_DIR=$rootdir/$DIR/data
+export PATH=$PATH:$HOME/.local/bin
 
 git clone https://github.com/nvidia/apex --depth=1 && \
   cd apex && \
