@@ -237,7 +237,7 @@ def main():
         '''Initialize distributed communication'''
         torch.distributed.init_process_group(
             backend=os.environ.get('BACKEND', 'nccl'),
-            init_method='file://{}/pytorch-dist'.format(os.environ.get('PHILLY_SCRATCH_DIRECTORY', '/tmp'),
+            init_method='file://{}/pytorch-dist'.format(os.environ.get('PHILLY_SCRATCH_DIRECTORY', '/tmp')),
             rank=os.environ['RANK'],
             world_size=os.environ['WORLD_SIZE'],
         )
