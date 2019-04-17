@@ -236,7 +236,7 @@ def main():
         assert args.cuda
         '''Initialize distributed communication'''
         torch.distributed.init_process_group(
-            backend='nccl',
+            backend=os.environ.get('BACKEND', 'nccl'),
             init_method='file://{}/pytorch-dist'.format(os.environ['rootdir']),
             rank=os.environ['RANK'],
             world_size=os.environ['WORLD_SIZE'],
