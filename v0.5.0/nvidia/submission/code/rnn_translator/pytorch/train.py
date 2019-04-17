@@ -235,8 +235,12 @@ def main():
     if distributed:
         assert args.cuda
         '''Initialize distributed communication'''
-        torch.distributed.init_process_group(backend='nccl',
-                                             init_method='env://')
+        torch.distributed.init_process_group(
+            backend='nccl',
+            init_method='file://{}/pytorch-dist'.format(os.environ['rootdir']),
+            rank=os.environ['RANK'],
+            world_size=os.environ['WORLD_SIZE'],
+        )
         assert torch.distributed.is_initialized()
 
     gnmt_print(key=mlperf_log.RUN_START)

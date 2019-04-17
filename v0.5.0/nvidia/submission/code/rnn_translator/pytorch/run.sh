@@ -1,4 +1,4 @@
-ROOT=$rootdir
+export ROOT=$rootdir
 
 DIR=v0.5.0/nvidia/submission/code/rnn_translator
 
