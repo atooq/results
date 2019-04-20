@@ -145,6 +145,8 @@ class TextDataset(Dataset):
         else:
             sampler = StaticDistributedSampler(self, batch_size, pad)
 
+        print('building dataloader')
+
         return DataLoader(self,
                           batch_size=batch_size,
                           collate_fn=collate_fn,
