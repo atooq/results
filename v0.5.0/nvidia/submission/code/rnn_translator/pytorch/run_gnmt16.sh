@@ -8,10 +8,13 @@ else
   echo "Unknown system, assuming DGX1"
 fi
 DGXNGPU=${PHILLY_GPU_COUNT:-$1}
-SLURM_NTASKS_PER_NODE=${SLURM_NTASKS_PER_NODE:-$DGXNGPU}
-SLURM_JOB_ID=${SLURM_JOB_ID:-$PHILLY_JOB_ID}
-MULTI_NODE=${MULTI_NODE:-''}
-echo "Run vars: id $SLURM_JOB_ID gpus $SLURM_NTASKS_PER_NODE mparams $MULTI_NODE"
+GPU_PER_NODE=${PHILLY_CONTAINER_GPU_COUNT:-${DGXNGPU}}
+JOB_ID=${PHILLY_JOB_ID:-'007'}
+NODE_ID=${PHILLY_CONTAINER_INDEX:-'0'}
+
+NUM_NODE=$(expr $DGXNGPU / $GPU_PER_NODE)
+MULTI_NODE="--nnodes $NUM_NODE --node_rank $NODE_ID"
+echo "Run vars: id $JOB_ID gpus $GPU_PER_NODE mparams $MULTI_NODE"
 
 # runs benchmark and reports time to convergence
 # to use the script:
