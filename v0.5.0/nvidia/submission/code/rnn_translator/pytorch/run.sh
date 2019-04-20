@@ -14,7 +14,7 @@ cd .. && \
     pip install --user -r requirements.txt && \
     python setup.py install --user
 
-cd $ROOT/pipeline && git checkout crit && git pull && pip install --force-reinstall .
+cd $ROOT/pipeline && pip install --force-reinstall .
 
 cd $OLD_PWD
 
