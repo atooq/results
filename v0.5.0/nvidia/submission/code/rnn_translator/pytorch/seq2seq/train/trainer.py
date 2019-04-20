@@ -137,6 +137,7 @@ class Seq2SeqTrainer:
 
         if self.batch_first:
             if self.model.rank == 0:
+                print('forwarding')
                 output = self.model(src, src_length)
             else:
                 output = self.model(None, src_length, target=tgt[:, :-1])
@@ -209,7 +210,6 @@ class Seq2SeqTrainer:
         TEST_NUM_BATCH = len(data_loader)
         self.model.set_num_batch(TEST_NUM_BATCH)
         for i, (src, tgt) in enumerate(data_loader):
-            print('iteration ', i)
             if i == TEST_NUM_BATCH:
                 break
             self.save_counter += 1
@@ -217,6 +217,7 @@ class Seq2SeqTrainer:
             data_time.update(time.time() - end)
 
             # do a train/evaluate iteration
+            print('iteration ', i)
             stats = self.iterate(src, tgt, training=training)
             if self.model.rank == 0:
                 continue
