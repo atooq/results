@@ -100,6 +100,8 @@ class BucketingSampler(Sampler):
 
         print('asserting 2')
         assert len(indices) == self.num_samples // self.world_size
+        print('itering indices')
+        print(indices)
 
         return iter(indices)
 
