@@ -209,6 +209,7 @@ class Seq2SeqTrainer:
         TEST_NUM_BATCH = len(data_loader)
         self.model.set_num_batch(TEST_NUM_BATCH)
         for i, (src, tgt) in enumerate(data_loader):
+            print('iteration ', i)
             if i == TEST_NUM_BATCH:
                 break
             self.save_counter += 1
