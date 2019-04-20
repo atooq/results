@@ -20,4 +20,4 @@ cd $OLD_PWD
 
 git checkout pipeline
 
-./run_gnmt16.sh
+bash run_gnmt16.sh
