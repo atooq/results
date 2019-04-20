@@ -1,4 +1,5 @@
 export ROOT=$rootdir
+OLD_PWD=$PWD
 
 DIR=v0.5.0/nvidia/submission/code/rnn_translator
 
@@ -13,4 +14,10 @@ cd .. && \
     pip install --user -r requirements.txt && \
     python setup.py install --user
 
-./run_and_time.sh
+cd $ROOT/pipeline && git checkout crit && git pull && pip install --force-reinstall .
+
+cd $OLD_PWD
+
+git checkout pipeline
+
+./run_gnmt16.sh
