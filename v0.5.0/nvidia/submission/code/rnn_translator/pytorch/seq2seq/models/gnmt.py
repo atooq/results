@@ -53,9 +53,29 @@ class GNMT(Seq2Seq):
                                                 num_layers, bias, dropout,
                                                 batch_first, math, embedder)
 
+        self.layers = [Encoder(self.encoder), Decoder(self.decoder)]
+
     def forward(self, input_encoder, input_enc_len, input_decoder):
         context = self.encode(input_encoder, input_enc_len)
         context = (context, input_enc_len, None)
         output, _, _ = self.decode(input_decoder, context)
 
         return output
+
+class Encoder(nn.Module):
+    def __init__(self, encoder):
+        super().__init__()
+        self.encoder = encoder
+
+    def forward(self, input_encoder, input_enc_len):
+        context = self.encoder(input_encoder, input_enc_len)
+        return context
+
+class Decoder(nn.Module):
+    def __init__(self, decoder):
+        super().__init__()
+        self.decoder = decoder
+
+    def forward(self, encoder_context, input_decoder, input_enc_len):
+        out, _, _ = self.decoder(input_decoder, (encoder_context, input_enc_len, None))
+        return out

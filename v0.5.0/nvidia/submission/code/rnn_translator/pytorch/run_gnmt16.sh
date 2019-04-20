@@ -8,13 +8,10 @@ else
   echo "Unknown system, assuming DGX1"
 fi
 DGXNGPU=${PHILLY_GPU_COUNT:-$1}
-GPU_PER_NODE=${PHILLY_CONTAINER_GPU_COUNT:-${DGXNGPU}}
-JOB_ID=${PHILLY_JOB_ID:-'007'}
-NODE_ID=${PHILLY_CONTAINER_INDEX:-'0'}
-
-NUM_NODE=$(expr $DGXNGPU / $GPU_PER_NODE)
-MULTI_NODE="--nnodes $NUM_NODE --node_rank $NODE_ID"
-echo "Run vars: id $JOB_ID gpus $GPU_PER_NODE mparams $MULTI_NODE"
+SLURM_NTASKS_PER_NODE=${SLURM_NTASKS_PER_NODE:-$DGXNGPU}
+SLURM_JOB_ID=${SLURM_JOB_ID:-$PHILLY_JOB_ID}
+MULTI_NODE=${MULTI_NODE:-''}
+echo "Run vars: id $SLURM_JOB_ID gpus $SLURM_NTASKS_PER_NODE mparams $MULTI_NODE"
 
 # runs benchmark and reports time to convergence
 # to use the script:
@@ -32,7 +29,7 @@ set -x
 DATASET_DIR=${DATASET_DIR:-'../data'}
 RESULTS_DIR='gnmt_wmt16'
 BATCH=${BATCH:-32}
-BATCH=256
+BATCH=128
 TEST_BATCH_SIZE=${TEST_BATCH_SIZE:-128}
 TEST_BATCH_SIZE=32
 LR=${LR:-"1.75e-3"}
@@ -44,17 +41,17 @@ DECAY_STEPS=${DECAY_STEPS:-40}
 echo "running benchmark"
 
 # run training
-python -m torch.distributed.launch --nproc_per_node $GPU_PER_NODE $MULTI_NODE train.py \
+python -m torch.distributed.launch --nproc_per_node $SLURM_NTASKS_PER_NODE $MULTI_NODE train.py \
   --save ${RESULTS_DIR} \
   --dataset-dir ${DATASET_DIR} \
   --target-bleu $TARGET \
   --epochs 20 \
   --math fp32 \
-  --print-freq 500 \
+  --print-freq 50 \
   --batch-size $BATCH \
   --test-batch-size $TEST_BATCH_SIZE \
   --val-batch-size 32 \
-  --model-config "{'num_layers': 4, 'hidden_size': 128, 'dropout':0.1, 'share_embedding': False}" \
+  --model-config "{'num_layers': 8, 'hidden_size': 1024, 'dropout':0.2, 'share_embedding': False}" \
   --optimization-config "{'optimizer': 'FusedAdam', 'lr': $LR}" \
   --scheduler-config "{'lr_method':'mlperf', 'warmup_iters':$WARMUP_ITERS, 'remain_steps':$REMAIN_STEPS, 'decay_steps':$DECAY_STEPS}" ; ret_code=$?
   # --resume ./results/gnmt_wmt16/checkpoint1.pth \

@@ -16,6 +16,7 @@ from seq2seq.utils import barrier
 
 def gather_predictions(preds):
     world_size = get_world_size()
+    preds = preds.cpu()
     if world_size > 1:
         all_preds = preds.new(world_size * preds.size(0), preds.size(1))
         all_preds_list = list(all_preds.chunk(world_size, dim=0))

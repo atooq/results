@@ -118,6 +118,7 @@ class Seq2SeqTrainer:
                                            )
 
         logging.info(f'Using optimizer: {self.optimizer}')
+        self.model.set_criterion(self.criterion)
 
     def iterate(self, src, tgt, update=True, training=True):
         src, src_length = src
@@ -135,22 +136,43 @@ class Seq2SeqTrainer:
             tgt = tgt.cuda()
 
         if self.batch_first:
-            output = self.model(src, src_length, tgt[:, :-1])
-            tgt_labels = tgt[:, 1:]
-            T, B = output.size(1), output.size(0)
+            if self.model.rank == 0:
+                output = self.model(src, src_length)
+            else:
+                output = self.model(None, src_length, target=tgt[:, :-1])
+            # output = self.model(src, src_length, tgt[:, :-1])
+                tgt_labels = tgt[:, 1:]
+                T, B = output.size(1), output.size(0)
         else:
-            output = self.model(src, src_length, tgt[:-1])
-            tgt_labels = tgt[1:]
-            T, B = output.size(0), output.size(1)
+            if training:
+                if self.model.rank == 0:
+                    output = self.model(src, src_length)
+                else:
+                    output = self.model(None, tgt[:-1], src_length, target=tgt[1:])
+            else:
+                output = self.model(src, src_length, tgt[:-1])
 
-        loss = self.criterion(output.view(T * B, -1),
-                              tgt_labels.contiguous().view(-1))
+            tgt_labels = tgt[1:]
+            T, B = tgt_labels.size(0), tgt_labels.size(1)
+            # output = self.model(src, src_length, tgt[:-1])
+            # tgt_labels = tgt[1:]
+            # T, B = output.size(0), output.size(1)
+
+        if self.model.rank == 0 and training:
+            return 5, 5, num_toks
+        if not training:
+            loss = self.criterion(output.view(T * B, -1),
+                    tgt_labels.contiguous().view(-1))
+        else:
+
+            loss = output
 
         loss_per_batch = loss.item()
         loss /= B
 
         if training:
-            self.fp_optimizer.step(loss, self.optimizer, self.scheduler, update)
+            pass
+            # self.fp_optimizer.step(loss, self.optimizer, self.scheduler, update)
 
         loss_per_token = loss_per_batch / num_toks['tgt']
         loss_per_sentence = loss_per_batch / B
@@ -182,13 +204,21 @@ class Seq2SeqTrainer:
         batch_size = data_loader.batch_size
 
         end = time.time()
+        self.model.reset()
+        self.model.set_optimizer(self.optimizer)
+        TEST_NUM_BATCH = len(data_loader)
+        self.model.set_num_batch(TEST_NUM_BATCH)
         for i, (src, tgt) in enumerate(data_loader):
+            if i == TEST_NUM_BATCH:
+                break
             self.save_counter += 1
             # measure data loading time
             data_time.update(time.time() - end)
 
             # do a train/evaluate iteration
             stats = self.iterate(src, tgt, training=training)
+            if self.model.rank == 0:
+                continue
             loss_per_token, loss_per_sentence, num_toks = stats
 
             # measure accuracy and record loss
@@ -260,6 +290,7 @@ class Seq2SeqTrainer:
         :param data_loader: data loader
         :param training: if True preallocates memory for backward pass
         """
+        return
         batch_size = data_loader.batch_size
         max_len = data_loader.dataset.max_len
 
@@ -300,6 +331,7 @@ class Seq2SeqTrainer:
         :param data_loader: data loader
         """
         torch.set_grad_enabled(False)
+        self.model.sync_param()
         self.model.eval()
         for p in self.model.parameters():
             p.grad = None

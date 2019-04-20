@@ -222,7 +222,7 @@ def main():
     args = parse_args()
 
     if args.cuda:
-        torch.cuda.set_device(args.local_rank)
+        # torch.cuda.set_device(args.local_rank)
         device = torch.device('cuda')
     else:
         device = torch.device('cpu')
@@ -236,7 +236,7 @@ def main():
         assert args.cuda
         '''Initialize distributed communication'''
         torch.distributed.init_process_group(
-            backend=os.environ.get('BACKEND', 'nccl'),
+            backend=os.environ.get('BACKEND', 'gloo'),
             init_method='file://{}/pytorch-dist'.format(os.environ.get('PHILLY_SCRATCH_DIRECTORY', '/tmp')),
             rank=os.environ['RANK'],
             world_size=os.environ['WORLD_SIZE'],
@@ -417,12 +417,16 @@ def main():
         math=args.math,
         print_freq=args.print_freq,
         cuda=args.cuda,
-        distributed=distributed,
+        distributed=False,
         distributed_overlap_allreduce=args.enable_apex_allreduce_overlap,
         distributed_overlap_allreduce_messagesize=args.apex_message_size,
         intra_epoch_eval=args.intra_epoch_eval,
         translator=translator)
 
+    from pipeline import Pipeline
+    model = Pipeline(model)
+
+    torch.cuda.set_device(model.rank)
     trainer_options['model'] = model
     trainer = trainers.Seq2SeqTrainer(**trainer_options)
 
@@ -455,12 +459,14 @@ def main():
         # evaluate on validation set
         if not args.disable_eval:
             logging.info(f'Running validation on dev set')
+            # implicitly sync parameters in evaluate method
             val_loss, val_perf = trainer.evaluate(val_loader)
 
         break_training = False
         if not args.disable_eval:
             barrier()
             gnmt_print(key=mlperf_log.EVAL_START, value=epoch)
+            translator.model = trainer.model.original_model[0]
             test_bleu, break_training = translator.run(calc_bleu=True,
                                                        epoch=epoch)
 

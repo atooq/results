@@ -30,8 +30,8 @@ class BucketingSampler(Sampler):
             rank = get_rank()
 
         self.dataset = dataset
-        self.world_size = world_size
-        self.rank = rank
+        self.world_size = 1
+        self.rank = 0
         self.epoch = 0
         self.bucketing = bucketing
         self.seeds = seeds
