@@ -426,7 +426,7 @@ def main():
     from pipeline import Pipeline
     model = Pipeline(model)
 
-    torch.cuda.set_device(model.rank)
+    torch.cuda.set_device(args.local_rank)
     trainer_options['model'] = model
     trainer = trainers.Seq2SeqTrainer(**trainer_options)
 
