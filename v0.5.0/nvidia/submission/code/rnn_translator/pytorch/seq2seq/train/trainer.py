@@ -147,7 +147,9 @@ class Seq2SeqTrainer:
         else:
             if training:
                 if self.model.rank == 0:
+                    print('forwarding')
                     output = self.model(src, src_length)
+                    print('finished')
                 else:
                     output = self.model(None, tgt[:-1], src_length, target=tgt[1:])
             else:
