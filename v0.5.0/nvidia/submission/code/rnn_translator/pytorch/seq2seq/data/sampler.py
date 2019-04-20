@@ -85,8 +85,6 @@ class BucketingSampler(Sampler):
             indices = indices[order, :]
             indices = indices.view(-1)
 
-        print('======ing=======')
-        print('asserting 1')
         assert len(indices) == self.num_samples
 
         # build indices for each individual worker
@@ -98,10 +96,7 @@ class BucketingSampler(Sampler):
         indices = indices.view(-1)
         indices = indices.tolist()
 
-        print('asserting 2')
         assert len(indices) == self.num_samples // self.world_size
-        print('itering indices')
-        print(indices)
 
         return iter(indices)
 
