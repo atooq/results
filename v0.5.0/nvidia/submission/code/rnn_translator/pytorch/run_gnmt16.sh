@@ -44,13 +44,13 @@ DECAY_STEPS=${DECAY_STEPS:-40}
 echo "running benchmark"
 
 # run training
-python -m torch.distributed.launch --nproc_per_node $SLURM_NTASKS_PER_NODE $MULTI_NODE train.py \
+python -m torch.distributed.launch --nproc_per_node $GPU_PER_NODE $MULTI_NODE train.py \
   --save ${RESULTS_DIR} \
   --dataset-dir ${DATASET_DIR} \
   --target-bleu $TARGET \
   --epochs 20 \
   --math fp32 \
-  --print-freq 50 \
+  --print-freq 500 \
   --batch-size $BATCH \
   --test-batch-size $TEST_BATCH_SIZE \
   --val-batch-size 32 \
