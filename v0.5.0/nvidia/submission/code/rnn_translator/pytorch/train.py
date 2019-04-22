@@ -370,7 +370,6 @@ def main():
                                          bucketing=args.bucketing,
                                          num_workers=args.train_loader_workers)
 
-    print('==========loader built=========')
 
     gnmt_print(key=mlperf_log.INPUT_BATCH_SIZE,
                value=args.batch_size * get_world_size())
