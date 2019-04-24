@@ -100,9 +100,9 @@ class ResidualRNN(nn.Module):
         self.residual = residual
         self.dropout = dropout
         self.keep_attn = keep_attn
-    def forward(self, inp):
+    def forward(self, x, attn):
         """inp should be a tuple of 2 tensors"""
-        x, attn = inp
+        # x, attn = inp
         residual = x
         x = self.dropout(x)
         x = torch.cat((x, attn), dim=2)

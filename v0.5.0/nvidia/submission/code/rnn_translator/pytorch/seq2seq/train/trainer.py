@@ -154,7 +154,7 @@ class Seq2SeqTrainer:
             # tgt_labels = tgt[1:]
             # T, B = output.size(0), output.size(1)
 
-        if self.model.rank == 0 and training:
+        if not self.model.is_last() and training:
             return 5, 5, num_toks
         if not training:
             loss = self.criterion(output.view(T * B, -1),
@@ -212,7 +212,7 @@ class Seq2SeqTrainer:
 
             # do a train/evaluate iteration
             stats = self.iterate(src, tgt, training=training)
-            if self.model.rank == 0:
+            if not self.model.is_last():
                 continue
             loss_per_token, loss_per_sentence, num_toks = stats
 
