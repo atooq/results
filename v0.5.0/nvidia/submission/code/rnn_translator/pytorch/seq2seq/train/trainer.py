@@ -146,7 +146,7 @@ class Seq2SeqTrainer:
             if training:
                 output = self.model(src, target=tgt[1:], src_length=src_length, target_input=tgt[:-1])
             else:
-                output = self.model(src, src_length, tgt[:-1])
+                output = self.model.original_model[0](src, src_length, tgt[:-1])
 
             tgt_labels = tgt[1:]
             T, B = tgt_labels.size(0), tgt_labels.size(1)
