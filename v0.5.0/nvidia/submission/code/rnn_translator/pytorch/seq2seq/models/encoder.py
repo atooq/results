@@ -62,6 +62,43 @@ class EmuBidirLSTM(nn.Module):
 
 
 
+class ResidualRNN(nn.Module):
+    """RNN with residual connection from input to output"""
+    def __init__(self, rnn, dropout):
+        super().__init__()
+        self.rnn = rnn
+        self.dropout = dropout
+
+    def forward(self, x):
+        residual = x
+        x = self.dropout(x)
+        x, _ = self.rnn(x)
+        return x + residual
+
+class RNNLayer(nn.Module):
+    def __init__(self, rnn, dropout):
+        super().__init__()
+        self.rnn = rnn
+        self.dropout = dropout
+
+    def forward(self, x):
+        x = self.dropout(x)
+        x, _ = self.rnn(x)
+        return x
+
+
+class BiRNNWithEmbedding(nn.Module):
+    def __init__(self, embedder, rnn, dropout):
+        super().__init__()
+        self.embedder = embedder
+        self.rnn = rnn
+        self.dropout = dropout
+
+    def forward(self, inp, src_length):
+        x = self.embedder(inp)
+        x = self.rnn(x, src_length.cpu().long())
+        x = self.dropout(x)
+        return x
 
 
 class ResidualRecurrentEncoder(nn.Module):
@@ -113,6 +150,15 @@ class ResidualRecurrentEncoder(nn.Module):
         else:
             self.embedder = nn.Embedding(vocab_size, hidden_size,
                                          padding_idx=config.PAD)
+        self.layers = [
+            BiRNNWithEmbedding(
+                self.embedder,
+                self.rnn_layers[0],
+                self.dropout,
+            ),
+            RNNLayer(self.rnn_layers[1], self.dropout),
+            *[ResidualRNN(rnn, self.dropout) for rnn in self.rnn_layers[2:]],
+        ]
 
     def forward(self, inputs, lengths):
         """

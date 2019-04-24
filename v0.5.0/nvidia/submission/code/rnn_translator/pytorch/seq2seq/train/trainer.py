@@ -119,6 +119,7 @@ class Seq2SeqTrainer:
 
         logging.info(f'Using optimizer: {self.optimizer}')
         self.model.set_criterion(self.criterion)
+        self.model.set_optimizer(self.optimizer, self.scheduler)
 
     def iterate(self, src, tgt, update=True, training=True):
         src, src_length = src
@@ -136,19 +137,14 @@ class Seq2SeqTrainer:
             tgt = tgt.cuda()
 
         if self.batch_first:
-            if self.model.rank == 0:
-                output = self.model(src, src_length)
-            else:
-                output = self.model(None, src_length, target=tgt[:, :-1])
-            # output = self.model(src, src_length, tgt[:, :-1])
-                tgt_labels = tgt[:, 1:]
-                T, B = output.size(1), output.size(0)
+            raise NotImplementedError
+            output = self.model(src, target=tgt[:, :-1], src_length=src_length)
+        # output = self.model(src, src_length, tgt[:, :-1])
+            tgt_labels = tgt[:, 1:]
+            T, B = output.size(1), output.size(0)
         else:
             if training:
-                if self.model.rank == 0:
-                    output = self.model(src, src_length)
-                else:
-                    output = self.model(None, tgt[:-1], src_length, target=tgt[1:])
+                output = self.model(src, target=tgt[1:], src_length=src_length, target_input=tgt[:-1])
             else:
                 output = self.model(src, src_length, tgt[:-1])
 
@@ -205,7 +201,6 @@ class Seq2SeqTrainer:
 
         end = time.time()
         self.model.reset()
-        self.model.set_optimizer(self.optimizer)
         TEST_NUM_BATCH = len(data_loader)
         self.model.set_num_batch(TEST_NUM_BATCH)
         for i, (src, tgt) in enumerate(data_loader):

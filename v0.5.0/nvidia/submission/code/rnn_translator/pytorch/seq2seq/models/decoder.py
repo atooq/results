@@ -92,6 +92,44 @@ class Classifier(nn.Module):
         return out
 
 
+class ResidualRNN(nn.Module):
+
+    def __init__(self, rnn, dropout, residual=True, keep_attn=True):
+        super().__init__()
+        self.rnn = rnn
+        self.residual = residual
+        self.dropout = dropout
+        self.keep_attn = keep_attn
+    def forward(self, inp):
+        """inp should be a tuple of 2 tensors"""
+        x, attn = inp
+        residual = x
+        x = self.dropout(x)
+        x = torch.cat((x, attn), dim=2)
+        x, h = self.rnn(x)
+        if self.residual:
+            x = x + residual
+        if self.keep_attn:
+            x = (x, attn)
+        return x
+
+
+class AttentionRNN(nn.Module):
+    def __init__(self, embedder, rnn, dropout):
+        super().__init__()
+        self.embedder = embedder
+        self.rnn = rnn
+        self.dropout = dropout
+
+    def forward(self, inp, src_length, target_input):
+        inputs, context = target_input, inp
+        context_len = src_length
+        hidden = None
+        inputs = self.embedder(inputs)
+        rnn_outputs, _, attention_outputs, _ = self.rnn(
+            inputs, hidden, context, context_len)
+        return self.dropout(rnn_outputs), attention_outputs
+
 class ResidualRecurrentDecoder(nn.Module):
     """
     Decoder with Embedding, LSTM layers, attention, residual connections and
@@ -141,6 +179,16 @@ class ResidualRecurrentDecoder(nn.Module):
 
         self.classifier = Classifier(hidden_size, vocab_size, math)
         self.dropout = nn.Dropout(p=dropout)
+        self.layers = [
+            AttentionRNN(self.embedder, self.att_rnn, self.dropout),
+            *[ResidualRNN(
+                rnn, self.dropout,
+                residual=(idx != 0),
+                keep_attn=(idx < self.num_layers-2),
+                )
+              for idx, rnn in enumerate(self.rnn_layers)],
+            self.classifier,
+        ]
 
     def init_hidden(self, hidden):
         """
