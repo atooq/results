@@ -368,7 +368,7 @@ def main():
     batch_first = model.batch_first
 
     # define loss function (criterion) and optimizer
-    criterion = build_criterion(vocab_size, config.PAD, args.smoothing, batch_size)
+    criterion = build_criterion(vocab_size, config.PAD, args.smoothing, batch_first)
     opt_config = literal_eval(args.optimization_config)
     scheduler_config = literal_eval(args.scheduler_config)
     logging.info(f'Training optimizer: {opt_config}')
