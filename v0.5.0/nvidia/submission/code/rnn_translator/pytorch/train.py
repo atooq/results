@@ -193,7 +193,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def build_criterion(vocab_size, padding_idx, smoothing):
+def build_criterion(vocab_size, padding_idx, smoothing, batch_first):
     if smoothing == 0.:
         logging.info(f'Building CrossEntropyLoss')
         loss_weight = torch.ones(vocab_size)
@@ -209,7 +209,22 @@ def build_criterion(vocab_size, padding_idx, smoothing):
         gnmt_print(key=mlperf_log.MODEL_HP_LOSS_SMOOTHING,
                    value=smoothing)
 
-    return criterion
+    class BatchAvgLoss(nn.Module):
+
+        def __init__(self, crit, batch_first):
+            super().__init__()
+            self.crit = crit
+            self.batch_first = batch_first
+
+        def forward(self, input, target):
+            loss = self.crit(input, target)
+            if batch_first:
+                batch_size = input.size(0)
+            else:
+                batch_size = input.size(1)
+            return loss / batch_size
+
+    return BatchAvgLoss(criterion, batch_first)
 
 
 def main():
@@ -353,7 +368,7 @@ def main():
     batch_first = model.batch_first
 
     # define loss function (criterion) and optimizer
-    criterion = build_criterion(vocab_size, config.PAD, args.smoothing)
+    criterion = build_criterion(vocab_size, config.PAD, args.smoothing, batch_size)
     opt_config = literal_eval(args.optimization_config)
     scheduler_config = literal_eval(args.scheduler_config)
     logging.info(f'Training optimizer: {opt_config}')

@@ -163,8 +163,8 @@ class Seq2SeqTrainer:
 
             loss = output
 
-        loss_per_batch = loss.item()
-        loss /= B
+        loss_per_batch = loss.item() * B
+        # loss /= B
 
         if training:
             pass
